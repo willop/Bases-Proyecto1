@@ -1,0 +1,65 @@
+-- Primera consulta  R=2
+select count(pelicula.id_pelicula) as CantCopias from pelicula 
+inner join inventario on inventario.fk_id_pelicula = pelicula.id_pelicula
+where pelicula.titulo_pelicula =  'SUGAR WONKA';
+
+-- Segunda consulta  R=7 resultados Marcia,Tammy,Eleonor, Karl,Clara
+select cliente.nombre_cliente,cliente.apellido_cliente, count(*) as Cantidadd,
+sum(alquiler.monto_pelicula) as MontoTotal from alquiler
+inner join cliente on cliente.id_cliente = alquiler.fk_id_cliente
+group by FK_ID_cliente,cliente.nombre_cliente,cliente.apellido_cliente
+having count(*) >=40;
+
+--Tercera consulta R = 6548
+select cliente.nombre_cliente, cliente.apellido_cliente,pelicula.titulo_pelicula 
+--,alquiler.fecha_alquiler,pelicula.tiempo_renta,alquiler.fecha_alquiler + pelicula.tiempo_renta as Fecha_limite,alquiler.fecha_retorno 
+from alquiler
+inner join cliente on cliente.id_cliente = alquiler.fk_id_cliente
+inner join inventario on inventario.id_inventario = alquiler.fk_id_inventario
+inner join pelicula on pelicula.id_pelicula = inventario.fk_id_pelicula
+where alquiler.fecha_retorno is not null
+and (alquiler.fecha_alquiler + pelicula.tiempo_renta +1) < alquiler.fecha_retorno
+union 
+select cliente.nombre_cliente, cliente.apellido_cliente,pelicula.titulo_pelicula 
+--,alquiler.fecha_alquiler,pelicula.tiempo_renta,alquiler.fecha_alquiler + pelicula.tiempo_renta as Fecha_limite,alquiler.fecha_retorno 
+from alquiler
+inner join cliente on cliente.id_cliente = alquiler.fk_id_cliente
+inner join inventario on inventario.id_inventario = alquiler.fk_id_inventario
+inner join pelicula on pelicula.id_pelicula = inventario.fk_id_pelicula
+where alquiler.fecha_retorno is null;
+
+--Cuarta consulta  R = 9
+select (actor.nombre_actor ||' '|| actor.apellido_actor) as NombreActor from actor
+where INSTR(actor.apellido_actor,'son',1,1)>=1;
+
+ 
+--Quinta consulta R = 19
+select sub.apellido as apellido, count(*) as MismoNombre from actor
+inner join (
+select actor.apellido_actor as apellido, count(*) as Cant from actor
+group by actor.apellido_actor
+--having count(*)>1
+)
+sub on sub.apellido = actor.apellido_actor
+group by sub.apellido
+having COUNT(*) >2;
+
+
+
+--Sexta consulta  R =58
+select actor.nombre_actor, actor.apellido_actor, pelicula.anio_pelicula as FechaLanzamiento
+ from actor
+inner join pelicula_actor on pelicula_actor.fk_id_actor =actor.id_actor
+inner join pelicula on pelicula.id_pelicula = pelicula_actor.fk_id_pelicula
+where pelicula.descripcion_pelicula like '%Shark%'
+and pelicula.descripcion_pelicula like '%Crocodile%'
+order by actor.apellido_actor asc;
+
+--Septima consulta R=10
+select categoria.nombre_categoria, count(pelicula.id_pelicula) as NoPeliculas from categoria
+inner join pelicula_categoria on pelicula_categoria.fk_id_categoria = categoria.id_categoria
+inner join pelicula on pelicula.id_pelicula = pelicula_categoria.fk_id_pelicula
+group by categoria.nombre_categoria
+having count(*) >=55 
+and count(*) <=65
+order by NoPeliculas desc;
