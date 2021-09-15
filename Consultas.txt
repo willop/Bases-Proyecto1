@@ -1,3 +1,37 @@
+-- Vista de Tablas
+select 'Actor', count(*) from actor
+union
+select 'Categoria', count(*) from categoria
+union
+select 'Ciudad', count(*) from ciudad
+union
+select 'Clasificacion', count(*) from clasificacion
+union
+select 'Cliente', count(*) from cliente
+union
+select 'Direccion', count(*) from Direccion
+union
+select 'Empleado', count(*) from Empleado
+union
+select 'Inventario', count(*) from inventario
+union
+select 'Lenguaje', count(*) from lenguaje
+union
+select 'Pais', count(*) from Pais
+union
+select 'Pelicula', count(*) from pelicula
+union
+select 'Pelicula-Actor', count(*) from pelicula_actor
+union
+select 'Pelicula-Categoria', count(*) from pelicula_categoria
+union
+select 'Pelicula-Lenguaje', count(*) from pelicula_traduccion
+union
+select 'Renta', count(*) from alquiler
+union
+select 'Tienda', count(*) from tienda;
+
+
 -- Primera consulta  R=2
 select count(pelicula.id_pelicula) as CantCopias from pelicula 
 inner join inventario on inventario.fk_id_pelicula = pelicula.id_pelicula
@@ -55,6 +89,7 @@ where pelicula.descripcion_pelicula like '%Shark%'
 and pelicula.descripcion_pelicula like '%Crocodile%'
 order by actor.apellido_actor asc;
 
+
 --Septima consulta R=10
 select categoria.nombre_categoria, count(pelicula.id_pelicula) as NoPeliculas from categoria
 inner join pelicula_categoria on pelicula_categoria.fk_id_categoria = categoria.id_categoria
@@ -63,3 +98,67 @@ group by categoria.nombre_categoria
 having count(*) >=55 
 and count(*) <=65
 order by NoPeliculas desc;
+
+
+--Octava consulta R = 8
+select categoria.nombre_categoria, round(avg(pelicula.costo_danio - pelicula.costo_renta),2) as NoPeliculas from categoria
+inner join pelicula_categoria on pelicula_categoria.fk_id_categoria = categoria.id_categoria
+inner join pelicula on pelicula.id_pelicula = pelicula_categoria.fk_id_pelicula
+group by categoria.nombre_categoria
+having round(avg(pelicula.costo_danio - pelicula.costo_renta),2)  > 17;
+
+
+--Novena consulta
+-- R = 5462
+select pelicula.titulo_pelicula, actor.nombre_actor, actor.apellido_actor
+from pelicula
+join pelicula_actor on pelicula_actor.fk_id_pelicula = pelicula.id_pelicula
+join actor on actor.id_actor = pelicula_actor.fk_id_actor
+where actor.id_actor in (
+select pelicula_actor.fk_id_actor from pelicula_actor
+group by pelicula_actor.fk_id_actor having count(*)>=2
+);
+
+
+--Decima consulta R = 3
+select (actor.nombre_actor ||' '|| actor.apellido_actor)as NombreCompleto from actor
+where actor.nombre_actor = 
+(
+select actor.nombre_actor from actor
+where actor.id_actor = 8)
+union
+select (cliente.nombre_cliente ||' '|| cliente.apellido_cliente) as NombreCliente
+from cliente
+where cliente.nombre_cliente = (
+select actor.nombre_actor from actor
+where actor.id_actor = 8);
+
+
+
+
+
+--Onceaba consulta
+select (cliente.nombre_cliente ||' '|| cliente.apellido_cliente) as NombreCompleto 
+,pais.nombre_pais,(SubConsulta.Cant/SumaTotalPais.sumaTotal)*100 as Porcentaje
+    from (
+        select pais.nombre_pais,pais.id_pais as idpais, cliente.id_cliente as idcliente1,cliente.nombre_cliente, count(alquiler.fk_id_cliente) as Cant from cliente
+        inner join alquiler on alquiler.fk_id_cliente = cliente.id_cliente
+        inner join direccion on direccion.id_direccion = cliente.fk_id_direccion
+        inner join ciudad on ciudad.id_ciudad = direccion.fk_id_ciudad
+        inner join pais on pais.id_pais = ciudad.fk_id_pais
+        group by cliente.id_cliente,cliente.nombre_cliente,pais.nombre_pais,pais.id_pais
+        order by Cant desc 
+        fetch first 1 rows only
+    )SubConsulta
+inner join (
+    select SumaPais.idpais, sum(NumCliente) as sumaTotal from(
+        select pais.id_pais as idpais, count(cliente.id_cliente) as NumCliente from alquiler
+        inner join cliente on cliente.id_cliente = alquiler.fk_id_cliente
+        inner join direccion on direccion.id_direccion = cliente.fk_id_direccion
+        inner join ciudad on ciudad.id_ciudad = direccion.fk_id_ciudad
+        inner join pais on pais.id_pais = ciudad.fk_id_pais
+        group by pais.id_pais
+    )SumaPais group by SumaPais.idpais
+)SumaTotalPais on sumatotalpais.idpais = subconsulta.idpais
+inner join cliente on cliente.id_cliente = subconsulta.idcliente1
+inner join pais on pais.id_pais = subconsulta.idpais;
